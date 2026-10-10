@@ -2,7 +2,12 @@
 name = "my-agent"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = ["anthropic","python-dotenv"]
+dependencies = [
+    "anthropic",
+    "httpx>=0.28.1",
+    "python-dotenv",
+    "trafilatura>=2.3.1",
+]
 
 [build-system]
 requires = ["hatchling"]
