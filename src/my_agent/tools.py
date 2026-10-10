@@ -11,7 +11,8 @@ def fetch_page(url: str) -> str:
         url: The page to fetch.
 
     Returns:
-        The page text, or a short message if the page has no text.
+        The page text, cut to MAX_CHARS characters if it's longer,
+        or a short message if the page has no text.
     """
     res = httpx.get(
         url,
@@ -29,9 +30,8 @@ def fetch_page(url: str) -> str:
         return f"No readable text found at {url}"
 
     if len(result) > MAX_CHARS:
-        print("*****^^&&😄😄😄😄😄😄^^^^^^^^&&&&&&&&&")
         truncated_result = (
-            result[:MAX_CHARS] + "\n\nTruncated: showing first 10000 characters"
+            result[:MAX_CHARS] + f"\n\nTruncated: showing first {MAX_CHARS} characters"
         )
         return truncated_result
 
