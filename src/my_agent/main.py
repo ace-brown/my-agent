@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from anthropic import Anthropic
+from my_agent.agent import ask_claude
 
 
 def run():
@@ -8,12 +9,11 @@ def run():
 
     client = Anthropic()
 
-    message = client.messages.create(
-        max_tokens=1024,
-        messages=[{"role": "user", "content": "Hi"}],
-        model="claude-sonnet-5-5",
+    message = ask_claude(
+        client,
+        "Tell me two first years that you can find in the Malcom X's first wiki page",
     )
 
-    for block in message.content:
-        if block.type == "text":
-            print(block.text)
+    print(message.stop_reason)
+
+    print(message.to_json())
