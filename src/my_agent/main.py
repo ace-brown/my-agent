@@ -1,19 +1,18 @@
 from dotenv import load_dotenv
 from anthropic import Anthropic
-from my_agent.agent import ask_claude
+from my_agent.agent import run_agent
 
 
 def run():
+    """Start the agent from the command line."""
 
     load_dotenv()
 
     client = Anthropic()
 
-    message = ask_claude(
+    result = run_agent(
         client,
-        "Tell me two first years that you can find in the Malcom X's first wiki page",
+        "Compare the first paragraphs of https://en.wikipedia.org/wiki/Python_(programming_language) and https://en.wikipedia.org/wiki/Rust",
     )
 
-    print(message.stop_reason)
-
-    print(message.to_json())
+    print(result)

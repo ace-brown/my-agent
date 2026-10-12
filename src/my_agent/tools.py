@@ -65,5 +65,4 @@ def fetch_page(url: str) -> str:
 
 
 if __name__ == "__main__":
-    # print(fetch_page("https://kraftmeister.org"))
     print(fetch_page("https://en.wikipedia.org/wiki/Malcolm_X"))
