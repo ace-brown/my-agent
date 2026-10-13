@@ -1,5 +1,8 @@
+import os
 import httpx
+import json
 import trafilatura
+from dotenv import load_dotenv
 
 MAX_CHARS = 10_000
 
@@ -64,5 +67,34 @@ def fetch_page(url: str) -> str:
     return result
 
 
+def web_search(query: str) -> str:
+    """Search the web.
+
+    Args:
+        query: What to search for.
+
+    Returns:
+        A numbered list of results, each with a title, URL, and short snippet.
+    """
+    api_key = os.environ["TAVILY_API_KEY"]
+    res = httpx.post(
+        url="https://api.tavily.com/search",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"query": query, "max_results": 5},
+    )
+
+    data = res.json()
+    formatted_results = []
+    for number, item in enumerate(data["results"], start=1):
+        formatted_content = " ".join(item["content"].split())
+        formatted_results.append(
+            f"[{number}] {item['title']}\nURL: {item['url']}\n{formatted_content}"
+        )
+
+    return "\n\n".join(formatted_results)
+
+
 if __name__ == "__main__":
-    print(fetch_page("https://en.wikipedia.org/wiki/Malcolm_X"))
+    load_dotenv()
+    result = web_search("best Python web frameworks 2026")
+    print(result)
