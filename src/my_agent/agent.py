@@ -1,9 +1,20 @@
 from anthropic import Anthropic
 from my_agent.tools import FETCH_PAGE_TOOL, WEB_SEARCH_TOOL, TOOLS_REGISTRY
 
+SYSTEM_PROMPT = (
+    "You are a research agent. "
+    "To answer a question, search the web, read the most relevant pages, "
+    "and only then write the answer. "
+    "Cite every important fact with a number in brackets, like [1]. "
+    "Only cite pages you actually read with the fetch_page tool, "
+    "never pages you only saw in search results. "
+    "At the end of the answer, add a 'Sources' section that lists "
+    "each citation number followed by its URL."
+)
+
 
 def ask_claude(client: Anthropic, messages: list):
-    """Send the conversation to Claude, with the web tools available.
+    """Send the conversation to Claude, with research instructions and the web tools.
 
     Args:
         client: The Anthropic client to use.
@@ -16,6 +27,7 @@ def ask_claude(client: Anthropic, messages: list):
         max_tokens=1024,
         messages=messages,
         model="claude-haiku-5-5",
+        system=SYSTEM_PROMPT,
         tools=[FETCH_PAGE_TOOL, WEB_SEARCH_TOOL],
     )
 
@@ -54,7 +66,6 @@ def run_agent(client: Anthropic, question: str):
 
         for block in response.content:
             if block.type == "tool_use":
-
                 if block.name not in TOOLS_REGISTRY:
                     tool_content = f"Unknown tool: {block.name}"
                 else:
