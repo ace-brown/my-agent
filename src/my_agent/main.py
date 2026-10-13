@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from anthropic import Anthropic
 from my_agent.agent import run_agent
+from my_agent.report import save_report
 
 
 def run():
@@ -14,4 +15,4 @@ def run():
         client, "What new features were added in the latest Django release?"
     )
 
-    print(result)
+    save_report(result)
