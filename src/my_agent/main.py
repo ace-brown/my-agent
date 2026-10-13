@@ -11,8 +11,7 @@ def run():
     client = Anthropic()
 
     result = run_agent(
-        client,
-        "Compare the first paragraphs of https://en.wikipedia.org/wiki/Python_(programming_language) and https://en.wikipedia.org/wiki/Rust",
+        client, "What new features were added in the latest Django release?"
     )
 
     print(result)

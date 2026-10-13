@@ -1,9 +1,9 @@
 from anthropic import Anthropic
-from my_agent.tools import FETCH_PAGE_TOOL, fetch_page
+from my_agent.tools import FETCH_PAGE_TOOL, WEB_SEARCH_TOOL, TOOLS_REGISTRY
 
 
 def ask_claude(client: Anthropic, messages: list):
-    """Send the conversation to Claude, with the fetch_page tool available.
+    """Send the conversation to Claude, with the web tools available.
 
     Args:
         client: The Anthropic client to use.
@@ -16,7 +16,7 @@ def ask_claude(client: Anthropic, messages: list):
         max_tokens=1024,
         messages=messages,
         model="claude-haiku-5-5",
-        tools=[FETCH_PAGE_TOOL],
+        tools=[FETCH_PAGE_TOOL, WEB_SEARCH_TOOL],
     )
 
     return message
@@ -54,13 +54,16 @@ def run_agent(client: Anthropic, question: str):
 
         for block in response.content:
             if block.type == "tool_use":
-                url = block.input["url"]
-                page_text = fetch_page(url)
+
+                if block.name not in TOOLS_REGISTRY:
+                    tool_content = f"Unknown tool: {block.name}"
+                else:
+                    tool_content = TOOLS_REGISTRY[block.name](**block.input)
                 tool_results.append(
                     {
                         "type": "tool_result",
                         "tool_use_id": block.id,
-                        "content": page_text,
+                        "content": tool_content,
                     }
                 )
 

@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 MAX_CHARS = 10_000
 
+
 FETCH_PAGE_TOOL = {
     "name": "fetch_page",
     "description": (
@@ -125,6 +126,8 @@ def web_search(query: str) -> str:
 
     return "\n\n".join(formatted_results)
 
+
+TOOLS_REGISTRY = {"fetch_page": fetch_page, "web_search": web_search}
 
 if __name__ == "__main__":
     load_dotenv()
