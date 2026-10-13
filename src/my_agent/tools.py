@@ -1,6 +1,5 @@
 import os
 import httpx
-import json
 import trafilatura
 from dotenv import load_dotenv
 
@@ -23,6 +22,27 @@ FETCH_PAGE_TOOL = {
             },
         },
         "required": ["url"],
+    },
+}
+
+WEB_SEARCH_TOOL = {
+    "name": "web_search",
+    "description": (
+        "Search the web for the query. "
+        "Use this when you need info or page and you don't know which URL has the answer. "
+        "It returns a numbered list of results each with url, title and snippet. "
+        "Snippets are short, so you should use fetch_page tool to fetch the most promising URLs. "
+        "If the search fails or finds nothing, returns a short message."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "Short search keywords, like you'd type into a search engine",
+            },
+        },
+        "required": ["query"],
     },
 }
 
@@ -75,16 +95,28 @@ def web_search(query: str) -> str:
 
     Returns:
         A numbered list of results, each with a title, URL, and short snippet.
+        If the search fails or finds nothing, a short message saying so.
     """
     api_key = os.environ["TAVILY_API_KEY"]
-    res = httpx.post(
-        url="https://api.tavily.com/search",
-        headers={"Authorization": f"Bearer {api_key}"},
-        json={"query": query, "max_results": 5},
-    )
+
+    try:
+        res = httpx.post(
+            url="https://api.tavily.com/search",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"query": query, "max_results": 5},
+            timeout=10,
+        )
+        res.raise_for_status()
+    except httpx.HTTPError as exc:
+        return f"Search failed for '{query}': {exc}"
 
     data = res.json()
+
     formatted_results = []
+
+    if not data["results"]:
+        return f"No results for '{query}'"
+
     for number, item in enumerate(data["results"], start=1):
         formatted_content = " ".join(item["content"].split())
         formatted_results.append(
