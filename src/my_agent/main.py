@@ -11,8 +11,11 @@ def run():
 
     client = Anthropic()
 
-    query = "What new features were added in the latest Django release?"
+    # query = "What new features were added in the latest Django release?"
+    query = "What are the best crypto and coins to buy for 5x or more gain?"
 
     result = run_agent(client, query)
 
     save_report(result, query)
+
+    print("Report saved to reports folder.")
