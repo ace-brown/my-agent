@@ -11,8 +11,8 @@ def run():
 
     client = Anthropic()
 
-    result = run_agent(
-        client, "What new features were added in the latest Django release?"
-    )
+    query = "What new features were added in the latest Django release?"
 
-    save_report(result)
+    result = run_agent(client, query)
+
+    save_report(result, query)
