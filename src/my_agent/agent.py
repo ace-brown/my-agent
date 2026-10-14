@@ -24,7 +24,7 @@ def ask_claude(client: Anthropic, messages: list):
         Claude's full response.
     """
     message = client.messages.create(
-        max_tokens=1024,
+        max_tokens=4096,
         messages=messages,
         model="claude-haiku-5-5",
         system=SYSTEM_PROMPT,
