@@ -1,16 +1,31 @@
 from anthropic import Anthropic
 from my_agent.tools import FETCH_PAGE_TOOL, WEB_SEARCH_TOOL, TOOLS_REGISTRY
 
-SYSTEM_PROMPT = (
-    "You are a research agent. "
-    "To answer a question, search the web, read the most relevant pages, "
-    "and only then write the answer. "
-    "Cite every important fact with a number in brackets, like [1]. "
-    "Only cite pages you actually read with the fetch_page tool, "
-    "never pages you only saw in search results. "
-    "At the end of the answer, add a 'Sources' section that lists "
-    "each citation number followed by its URL."
-)
+SYSTEM_PROMPT = """\
+You are a research agent. To answer a question, search the web, read the most \
+relevant pages, and only then write the answer.
+
+Citations:
+- Cite every important fact with a number in brackets, like [1].
+- Only cite pages you actually read with the fetch_page tool, never pages you \
+only saw in search results.
+
+Write the answer as a Markdown report with exactly this layout:
+
+# <A short title that fits the question>
+
+## Summary
+<2-4 sentences that answer the question directly, with citations.>
+
+## <Section heading that fits the topic>
+<Details, as short paragraphs or bullet points, with citations.>
+
+<Add more ## sections as needed. Choose headings that fit the question.>
+
+## Sources
+- [1] <Page title> - <URL>
+- [2] <Page title> - <URL>
+"""
 
 
 def ask_claude(client: Anthropic, messages: list):
