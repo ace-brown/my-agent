@@ -55,7 +55,8 @@ def run_agent(client: Anthropic, question: str):
     """Let Claude answer a question, using tools as many times as it needs.
 
     Pages that were already read are not fetched again, and searches and
-    page fetches are capped per run.
+    page fetches are capped per run. If a tool crashes, Claude is told about
+    the error and the run keeps going.
 
     Args:
         client: The Anthropic client to use.
@@ -91,6 +92,7 @@ def run_agent(client: Anthropic, question: str):
         for block in response.content:
             if block.type == "tool_use":
                 url = block.input.get("url")
+                is_error = False
 
                 if block.name not in TOOLS_REGISTRY:
                     tool_content = f"Unknown tool: {block.name}"
@@ -104,16 +106,23 @@ def run_agent(client: Anthropic, question: str):
                     else:
                         if block.name == "fetch_page":
                             fetch_count += 1
-                            fetched_urls.append(url)
                         else:
                             search_count += 1
-                        tool_content = TOOLS_REGISTRY[block.name](**block.input)
+
+                        try:
+                            tool_content = TOOLS_REGISTRY[block.name](**block.input)
+                            if block.name == "fetch_page":
+                                fetched_urls.append(url)
+                        except Exception as exc:
+                            tool_content = f"Unexpected error occured: {exc}"
+                            is_error = True
                 print(block.name, tool_content[:80])
                 tool_results.append(
                     {
                         "type": "tool_result",
                         "tool_use_id": block.id,
                         "content": tool_content,
+                        "is_error": is_error,
                     }
                 )
 
