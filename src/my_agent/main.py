@@ -11,8 +11,8 @@ def run():
 
     client = Anthropic()
 
-    # query = "What new features were added in the latest Django release?"
-    query = "What are the best crypto and coins to buy for 5x or more gain?"
+    query = "What new features were added in the latest nextJs release?"
+    # query = "What are the best crypto and coins to buy for 5x or more gain?"
 
     result = run_agent(client, query)
 
