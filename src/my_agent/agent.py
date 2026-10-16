@@ -52,6 +52,8 @@ def ask_claude(client: Anthropic, messages: list):
 def run_agent(client: Anthropic, question: str):
     """Let Claude answer a question, using tools as many times as it needs.
 
+    Pages that were already read are not fetched again.
+
     Args:
         client: The Anthropic client to use.
         question: The user's question.
@@ -67,6 +69,8 @@ def run_agent(client: Anthropic, question: str):
         },
     ]
 
+    fetched_urls = []
+
     for _ in range(10):
         response = ask_claude(client, conversation)
 
@@ -81,10 +85,16 @@ def run_agent(client: Anthropic, question: str):
 
         for block in response.content:
             if block.type == "tool_use":
+                url = block.input.get("url")
+
                 if block.name not in TOOLS_REGISTRY:
                     tool_content = f"Unknown tool: {block.name}"
+                elif url is not None and url in fetched_urls:
+                    tool_content = "You already read this page. Its content is earlier in the conversation."
                 else:
                     tool_content = TOOLS_REGISTRY[block.name](**block.input)
+                    if block.name == "fetch_page":
+                        fetched_urls.append(url)
                 tool_results.append(
                     {
                         "type": "tool_result",
