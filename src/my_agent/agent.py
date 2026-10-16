@@ -41,7 +41,7 @@ def ask_claude(client: Anthropic, messages: list):
         Claude's full response.
     """
     message = client.messages.create(
-        max_tokens=4096,
+        max_tokens=200,
         messages=messages,
         model="claude-haiku-5-5",
         system=SYSTEM_PROMPT,
@@ -63,7 +63,8 @@ def run_agent(client: Anthropic, question: str):
         question: The user's question.
 
     Returns:
-        Claude's final answer, or a short message if it took too many steps.
+        Claude's final answer, with a warning on top if it was cut off, or a
+        short message if it took too many steps.
     """
 
     conversation = [
@@ -85,7 +86,19 @@ def run_agent(client: Anthropic, question: str):
         if response.stop_reason != "tool_use":
             for block in response.content:
                 if block.type == "text":
-                    return block.text
+                    if response.stop_reason == "max_tokens":
+                        return (
+                            "⚠️ This report was cut off and is incomplete.\n\n"
+                            + block.text
+                        )
+                    elif response.stop_reason == "end_turn":
+                        return block.text
+                    else:
+                        return (
+                            block.text
+                            + f"It has stopped because of {response.stop_reason}"
+                        )
+            return f"No answer was written: {response.stop_reason}"
 
         tool_results = []
 
