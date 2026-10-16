@@ -2,6 +2,7 @@ from anthropic import Anthropic
 from my_agent.tools import FETCH_PAGE_TOOL, WEB_SEARCH_TOOL, TOOLS_REGISTRY
 
 MAX_SEARCHES = 5
+MAX_FETCHES = 6
 SYSTEM_PROMPT = """\
 You are a research agent. To answer a question, search the web, read the most \
 relevant pages, and only then write the answer.
@@ -53,8 +54,8 @@ def ask_claude(client: Anthropic, messages: list):
 def run_agent(client: Anthropic, question: str):
     """Let Claude answer a question, using tools as many times as it needs.
 
-    Pages that were already read are not fetched again, and searches are
-    capped per run.
+    Pages that were already read are not fetched again, and searches and
+    page fetches are capped per run.
 
     Args:
         client: The Anthropic client to use.
@@ -73,6 +74,7 @@ def run_agent(client: Anthropic, question: str):
 
     fetched_urls = []
     search_count = 0
+    fetch_count = 0
 
     for _ in range(10):
         response = ask_claude(client, conversation)
@@ -95,13 +97,16 @@ def run_agent(client: Anthropic, question: str):
                 elif url is not None and url in fetched_urls:
                     tool_content = "You already read this page. Its content is earlier in the conversation."
                 else:
-                    if block.name == "fetch_page":
-                        fetched_urls.append(url)
-                        tool_content = TOOLS_REGISTRY[block.name](**block.input)
+                    if block.name == "fetch_page" and fetch_count >= MAX_FETCHES:
+                        tool_content = f"Max number of fetch is {MAX_FETCHES}, please don't fetch anymore and answer with the current fetched pages"
                     elif block.name == "web_search" and search_count >= MAX_SEARCHES:
                         tool_content = f"Max number of web search is {MAX_SEARCHES}, please don't search anymore and answer with the current searches"
                     else:
-                        search_count += 1
+                        if block.name == "fetch_page":
+                            fetch_count += 1
+                            fetched_urls.append(url)
+                        else:
+                            search_count += 1
                         tool_content = TOOLS_REGISTRY[block.name](**block.input)
                 print(block.name, tool_content[:80])
                 tool_results.append(
