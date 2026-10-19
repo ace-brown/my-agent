@@ -1,5 +1,6 @@
 from anthropic import Anthropic
 from my_agent.tools import FETCH_PAGE_TOOL, WEB_SEARCH_TOOL, TOOLS_REGISTRY
+from my_agent.events import EventType
 
 MAX_SEARCHES = 5
 MAX_FETCHES = 6
@@ -41,7 +42,7 @@ def ask_claude(client: Anthropic, messages: list):
         Claude's full response.
     """
     message = client.messages.create(
-        max_tokens=200,
+        max_tokens=4096,
         messages=messages,
         model="claude-haiku-5-5",
         system=SYSTEM_PROMPT,
@@ -51,7 +52,7 @@ def ask_claude(client: Anthropic, messages: list):
     return message
 
 
-def run_agent(client: Anthropic, question: str):
+def run_agent(client: Anthropic, question: str, on_event):
     """Let Claude answer a question, using tools as many times as it needs.
 
     Pages that were already read are not fetched again, and searches and
@@ -61,6 +62,8 @@ def run_agent(client: Anthropic, question: str):
     Args:
         client: The Anthropic client to use.
         question: The user's question.
+        on_event: Called with an event each time a tool is used, so the
+            caller can show progress.
 
     Returns:
         Claude's final answer, with a warning on top if it was cut off, or a
@@ -106,16 +109,21 @@ def run_agent(client: Anthropic, question: str):
             if block.type == "tool_use":
                 url = block.input.get("url")
                 is_error = False
+                skipped = False
 
                 if block.name not in TOOLS_REGISTRY:
                     tool_content = f"Unknown tool: {block.name}"
+                    is_error = True
                 elif url is not None and url in fetched_urls:
                     tool_content = "You already read this page. Its content is earlier in the conversation."
+                    skipped = True
                 else:
                     if block.name == "fetch_page" and fetch_count >= MAX_FETCHES:
                         tool_content = f"Max number of fetch is {MAX_FETCHES}, please don't fetch anymore and answer with the current fetched pages"
+                        skipped = True
                     elif block.name == "web_search" and search_count >= MAX_SEARCHES:
                         tool_content = f"Max number of web search is {MAX_SEARCHES}, please don't search anymore and answer with the current searches"
+                        skipped = True
                     else:
                         if block.name == "fetch_page":
                             fetch_count += 1
@@ -129,7 +137,15 @@ def run_agent(client: Anthropic, question: str):
                         except Exception as exc:
                             tool_content = f"Unexpected error occured: {exc}"
                             is_error = True
-                print(block.name, tool_content[:80])
+                event = {
+                    "tool_name": block.name,
+                    "event_type": EventType.TOOL_CALL,
+                    "input": block.input,
+                    "tool_content": tool_content,
+                    "error": is_error,
+                    "skipped": skipped,
+                }
+                on_event(event)
                 tool_results.append(
                     {
                         "type": "tool_result",
