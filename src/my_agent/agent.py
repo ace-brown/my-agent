@@ -62,8 +62,8 @@ def run_agent(client: Anthropic, question: str, on_event):
     Args:
         client: The Anthropic client to use.
         question: The user's question.
-        on_event: Called with an event each time a tool is used, so the
-            caller can show progress.
+        on_event: Called with an event before each call to Claude and each
+            time a tool is used, so the caller can show progress.
 
     Returns:
         Claude's final answer, with a warning on top if it was cut off, or a
@@ -82,6 +82,7 @@ def run_agent(client: Anthropic, question: str, on_event):
     fetch_count = 0
 
     for _ in range(10):
+        on_event({"event_type": EventType.THINKING})
         response = ask_claude(client, conversation)
 
         conversation.append({"role": "assistant", "content": response.content})
