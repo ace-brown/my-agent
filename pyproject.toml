@@ -6,6 +6,7 @@ dependencies = [
     "anthropic",
     "httpx>=0.28.1",
     "python-dotenv",
+    "rich>=15.0.0",
     "trafilatura>=2.3.1",
 ]
 
