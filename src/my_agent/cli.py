@@ -1,16 +1,21 @@
 from rich import print
 from rich.markup import escape
+from my_agent.events import EventType
 
 
 def on_event(event):
-    """Show a short line in the terminal for each tool the agent runs.
+    """Show a short line in the terminal for each step of the agent.
 
     Args:
-        event: What happened, such as the tool name, what it was asked for,
-            what it returned, and whether it failed or was skipped.
+        event: What happened, like Claude starting to think, or a tool
+            being used along with what it was asked for, what it returned,
+            and whether it failed or was skipped.
     """
 
-    if event["error"]:
+    if event["event_type"] == EventType.THINKING:
+        label = "🤔 Thinking…"
+        details = ""
+    elif event["error"]:
         label = "❌ [bold red]Error[/bold red]"
         details = f"[red]{escape(event['tool_content'][:80])}[/red]"
     elif event["skipped"]:
