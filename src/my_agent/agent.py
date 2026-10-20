@@ -66,8 +66,9 @@ def run_agent(client: Anthropic, question: str, on_event):
     Args:
         client: The Anthropic client to use.
         question: The user's question.
-        on_event: Called with an event before each call to Claude and each
-            time a tool is used, so the caller can show progress.
+        on_event: Called with an event before each call to Claude, each
+            time a tool is used, and once at the end with the total tokens
+            used, so the caller can show progress.
 
     Returns:
         Claude's final answer, with a warning on top if it was cut off, or a
@@ -84,32 +85,44 @@ def run_agent(client: Anthropic, question: str, on_event):
     fetched_urls = []
     search_count = 0
     fetch_count = 0
+    token_input = 0
+    token_output = 0
+
+    returned_result = "Stopped: too many steps"
 
     for _ in range(10):
         on_event({"event_type": EventType.THINKING})
         response = ask_claude(client, conversation, on_event)
+        token_input += response.usage.input_tokens
+        token_output += response.usage.output_tokens
 
         conversation.append({"role": "assistant", "content": response.content})
 
+        # Claude is done (no tools asked for): build the final result and leave the round loop.
         if response.stop_reason != "tool_use":
+            # Block loop: only find the text of the reply (there may be none).
+            text = ""
             for block in response.content:
                 if block.type == "text":
-                    if response.stop_reason == "max_tokens":
-                        return (
-                            "⚠️ This report was cut off and is incomplete.\n\n"
-                            + block.text
-                        )
-                    elif response.stop_reason == "end_turn":
-                        return block.text
-                    else:
-                        return (
-                            block.text
-                            + f"It has stopped because of {response.stop_reason}"
-                        )
-            return f"No answer was written: {response.stop_reason}"
+                    text = block.text
+                    break
+
+            if not text:
+                returned_result = f"No answer was written: {response.stop_reason}"
+            elif response.stop_reason == "max_tokens":
+                returned_result = (
+                    "⚠️ This report was cut off and is incomplete.\n\n" + text
+                )
+            elif response.stop_reason == "end_turn":
+                returned_result = text
+            else:
+                returned_result = (
+                    text + f"\n\nIt has stopped because of {response.stop_reason}"
+                )
+            break
 
         tool_results = []
-
+        # Loop for when it's tool_use
         for block in response.content:
             if block.type == "tool_use":
                 url = block.input.get("url")
@@ -162,4 +175,10 @@ def run_agent(client: Anthropic, question: str, on_event):
 
         conversation.append({"role": "user", "content": tool_results})
 
-    return "Stopped: too many steps"
+    on_event(
+        {
+            "event_type": EventType.USAGE,
+            "usage": {"token_input": token_input, "token_output": token_output},
+        }
+    )
+    return returned_result
