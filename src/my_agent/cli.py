@@ -30,7 +30,7 @@ def on_event(event):
     if event["event_type"] == EventType.USAGE:
         usage = event["usage"]
         print(
-            f"📊 Tokens: {usage['token_input']:,} in · {usage['token_output']:,} out"
+            f"📊 Tokens: {usage['token_input']:,} in · {usage['cached_tokens']:,} cached . {usage['token_output']:,} out . "
         )
         return
 
