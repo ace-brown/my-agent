@@ -48,6 +48,7 @@ def ask_claude(client: Anthropic, messages: list, on_event):
         messages=messages,
         model="claude-haiku-5-5",
         system=SYSTEM_PROMPT,
+        cache_control={"type": "ephemeral"},
         tools=[FETCH_PAGE_TOOL, WEB_SEARCH_TOOL],
     ) as stream:
         for text in stream.text_stream:
@@ -87,6 +88,7 @@ def run_agent(client: Anthropic, question: str, on_event):
     fetch_count = 0
     token_input = 0
     token_output = 0
+    cached_tokens = 0
 
     returned_result = "Stopped: too many steps"
 
@@ -95,6 +97,7 @@ def run_agent(client: Anthropic, question: str, on_event):
         response = ask_claude(client, conversation, on_event)
         token_input += response.usage.input_tokens
         token_output += response.usage.output_tokens
+        cached_tokens += response.usage.cache_read_input_tokens or 0
 
         conversation.append({"role": "assistant", "content": response.content})
 
@@ -178,7 +181,11 @@ def run_agent(client: Anthropic, question: str, on_event):
     on_event(
         {
             "event_type": EventType.USAGE,
-            "usage": {"token_input": token_input, "token_output": token_output},
+            "usage": {
+                "token_input": token_input,
+                "token_output": token_output,
+                "cached_tokens": cached_tokens,
+            },
         }
     )
     return returned_result
