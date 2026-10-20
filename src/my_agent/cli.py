@@ -2,15 +2,29 @@ from rich import print
 from rich.markup import escape
 from my_agent.events import EventType
 
+# True while Claude's streamed text has left the cursor in the middle of a line.
+_mid_line = False
+
 
 def on_event(event):
     """Show a short line in the terminal for each step of the agent.
 
     Args:
-        event: What happened, like Claude starting to think, or a tool
-            being used along with what it was asked for, what it returned,
-            and whether it failed or was skipped.
+        event: What happened, like a piece of Claude's reply, Claude
+            starting to think, or a tool being used along with what it was
+            asked for, what it returned, and whether it failed or was skipped.
     """
+    global _mid_line
+
+    if event["event_type"] == EventType.TEXT:
+        print(escape(event["text"]), end="", flush=True)
+        _mid_line = True
+        return
+
+    # Start cursor line on a fresh line after streamed text.
+    if _mid_line:
+        print()
+        _mid_line = False
 
     if event["event_type"] == EventType.THINKING:
         label = "🤔 Thinking…"

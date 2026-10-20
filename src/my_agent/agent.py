@@ -31,25 +31,29 @@ Write the answer as a Markdown report with exactly this layout:
 """
 
 
-def ask_claude(client: Anthropic, messages: list):
+def ask_claude(client: Anthropic, messages: list, on_event):
     """Send the conversation to Claude, with research instructions and the web tools.
 
     Args:
         client: The Anthropic client to use.
         messages: The whole conversation so far.
+        on_event: Called with each piece of Claude's reply as it arrives.
 
     Returns:
         Claude's full response.
     """
-    message = client.messages.create(
+
+    with client.messages.stream(
         max_tokens=4096,
         messages=messages,
         model="claude-haiku-5-5",
         system=SYSTEM_PROMPT,
         tools=[FETCH_PAGE_TOOL, WEB_SEARCH_TOOL],
-    )
+    ) as stream:
+        for text in stream.text_stream:
+            on_event({"event_type": EventType.TEXT, "text": text})
 
-    return message
+        return stream.get_final_message()
 
 
 def run_agent(client: Anthropic, question: str, on_event):
@@ -83,7 +87,7 @@ def run_agent(client: Anthropic, question: str, on_event):
 
     for _ in range(10):
         on_event({"event_type": EventType.THINKING})
-        response = ask_claude(client, conversation)
+        response = ask_claude(client, conversation, on_event)
 
         conversation.append({"role": "assistant", "content": response.content})
 
