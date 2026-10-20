@@ -6,3 +6,4 @@ class EventType(Enum):
     REPORT_DONE = "report_done"
     TRUNCATED = "truncated"
     THINKING = "thinking"
+    TEXT = "text"
