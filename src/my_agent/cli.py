@@ -11,8 +11,9 @@ def on_event(event):
 
     Args:
         event: What happened, like a piece of Claude's reply, Claude
-            starting to think, or a tool being used along with what it was
-            asked for, what it returned, and whether it failed or was skipped.
+            starting to think, the tokens used in the run, or a tool being
+            used along with what it was asked for, what it returned, and
+            whether it failed or was skipped.
     """
     global _mid_line
 
@@ -25,6 +26,13 @@ def on_event(event):
     if _mid_line:
         print()
         _mid_line = False
+
+    if event["event_type"] == EventType.USAGE:
+        usage = event["usage"]
+        print(
+            f"📊 Tokens: {usage['token_input']:,} in · {usage['token_output']:,} out"
+        )
+        return
 
     if event["event_type"] == EventType.THINKING:
         label = "🤔 Thinking…"

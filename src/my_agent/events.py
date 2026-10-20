@@ -7,3 +7,4 @@ class EventType(Enum):
     TRUNCATED = "truncated"
     THINKING = "thinking"
     TEXT = "text"
+    USAGE = "usage"
