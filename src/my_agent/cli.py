@@ -42,3 +42,18 @@ def on_event(event):
         label = "📄 [bold green]Reading[/bold green]"
         details = escape(event["input"]["url"])
     print(f"{label} {details}")
+
+
+def show_error(message):
+    """Show a short error line in the terminal.
+
+    Args:
+        message: What went wrong, in plain words.
+    """
+    global _mid_line
+
+    if _mid_line:
+        print()
+        _mid_line = False
+
+    print(f"❌ [bold red]{escape(message)}[/bold red]")

@@ -1,9 +1,13 @@
 import argparse
+import os
+import sys
 from dotenv import load_dotenv
-from anthropic import Anthropic
+from anthropic import Anthropic, APIConnectionError, APIStatusError, AuthenticationError
 from my_agent.agent import run_agent
 from my_agent.report import save_report
-from my_agent.cli import on_event
+from my_agent.cli import on_event, show_error
+
+REQUIRED_KEYS = ["ANTHROPIC_API_KEY", "TAVILY_API_KEY"]
 
 
 def run():
@@ -17,9 +21,27 @@ def run():
     parser.add_argument("question", help="the question to research")
     args = parser.parse_args()
 
+    missing_keys = [key for key in REQUIRED_KEYS if not os.environ.get(key)]
+    if missing_keys:
+        show_error(
+            f"Missing {', '.join(missing_keys)}. "
+            "Add it to your .env file (see .env.example)."
+        )
+        sys.exit(1)
+
     client = Anthropic()
 
-    result = run_agent(client, args.question, on_event)
+    try:
+        result = run_agent(client, args.question, on_event)
+    except AuthenticationError:
+        show_error("Your ANTHROPIC_API_KEY was rejected. Check the key in your .env file.")
+        sys.exit(1)
+    except APIConnectionError:
+        show_error("Could not reach the Claude API. Check your connection and try again.")
+        sys.exit(1)
+    except APIStatusError as exc:
+        show_error(f"The Claude API returned an error ({exc.status_code}). Try again later.")
+        sys.exit(1)
 
     save_report(result, args.question)
 
