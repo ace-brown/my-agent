@@ -1,6 +1,11 @@
-from rich import print
+from rich.console import Console
 from rich.markup import escape
 from my_agent.events import EventType
+
+# No automatic highlighting: it would color random numbers, brackets and URLs
+# in Claude's text, and split URLs when the text arrives in pieces.
+console = Console(highlight=False)
+print = console.print
 
 # True while Claude's streamed text has left the cursor in the middle of a line.
 _mid_line = False
@@ -18,7 +23,7 @@ def on_event(event):
     global _mid_line
 
     if event["event_type"] == EventType.TEXT:
-        print(escape(event["text"]), end="", flush=True)
+        print(escape(event["text"]), end="", soft_wrap=True)
         _mid_line = True
         return
 
@@ -30,7 +35,7 @@ def on_event(event):
     if event["event_type"] == EventType.USAGE:
         usage = event["usage"]
         print(
-            f"📊 Tokens: {usage['token_input']:,} in · {usage['cached_tokens']:,} cached . {usage['token_output']:,} out . "
+            f"📊 Tokens: {usage['token_input']:,} in · {usage['cached_tokens']:,} cached · {usage['token_output']:,} out"
         )
         return
 
