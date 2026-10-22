@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from anthropic import Anthropic, APIConnectionError, APIStatusError, AuthenticationError
 from my_agent.agent import run_agent
 from my_agent.report import save_report
@@ -13,7 +13,9 @@ REQUIRED_KEYS = ["ANTHROPIC_API_KEY", "TAVILY_API_KEY"]
 def run():
     """Research the question given on the command line and save the report."""
 
-    load_dotenv()
+    # Look for .env in the folder the command is run from, so it also works
+    # after installing the tool (the code then lives far from the user's files).
+    load_dotenv(find_dotenv(usecwd=True))
 
     parser = argparse.ArgumentParser(
         description="Research a question on the web and write a Markdown report with sources."
@@ -25,7 +27,8 @@ def run():
     if missing_keys:
         show_error(
             f"Missing {', '.join(missing_keys)}. "
-            "Add it to your .env file (see .env.example)."
+            "Set it in your environment or in a .env file in this folder "
+            "(see .env.example)."
         )
         sys.exit(1)
 
@@ -43,6 +46,6 @@ def run():
         show_error(f"The Claude API returned an error ({exc.status_code}). Try again later.")
         sys.exit(1)
 
-    save_report(result, args.question)
+    report_path = save_report(result, args.question)
 
-    print("Report saved to reports folder.")
+    print(f"Report saved to {report_path}")

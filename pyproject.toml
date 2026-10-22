@@ -1,6 +1,9 @@
 [project]
 name = "my-agent"
 version = "0.1.0"
+description = "A web research agent built from scratch on the Anthropic SDK: it searches, reads pages, and writes a cited Markdown report."
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     "anthropic",
